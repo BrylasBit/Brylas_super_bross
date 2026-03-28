@@ -3,26 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Title</title>
+    <title>BRYLAS SUPER BROS</title>
     <style>
         body {
-            background-image: url('path/to/BRYLAS_logo.png');
-            background-size: cover;
-            font-family: Arial, sans-serif;
+            margin: 0;
+            overflow: hidden;
         }
-        .character {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+        canvas {
+            display: block;
+            background: url('logo.png') no-repeat center center fixed;
+            background-size: cover;
         }
     </style>
 </head>
 <body>
-    <div class="character">
-        <img src="path/to/character_image.png" alt="Character" />
-    </div>
-    <h1>BRYLAS</h1>
-    <h2>Super Bross</h2>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        // Setup canvas and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Game variables
+        let score = 0;
+        let lives = 3;
+        let character;
+        let platforms = [];
+        let enemies = [];
+
+        function init() {
+            character = { x: 50, y: canvas.height - 150, width: 40, height: 80, color: 'black', dy: 0, jumpStrength: 12, gravity: 0.5, grounded: false };
+            createPlatforms();
+            createEnemies();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function createPlatforms() {
+            for (let i = 0; i < 5; i++) {
+                platforms.push({ x: i * 200, y: canvas.height - (i + 1) * 100, width: 200, height: 20 });
+            }
+        }
+
+        function createEnemies() {
+            enemies.push({ x: 400, y: canvas.height - 120, width: 40, height: 40 });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // Move character and handle collisions
+            character.dy += character.gravity;
+            character.y += character.dy;
+            character.grounded = false;
+
+            platforms.forEach(platform => {
+                if (character.y + character.height > platform.y && character.y + character.height < platform.y + platform.height && character.x + character.width > platform.x && character.x < platform.x + platform.width) {
+                    character.dy = 0;
+                    character.y = platform.y - character.height;
+                    character.grounded = true;
+                }
+            });
+
+            if (character.y > canvas.height) {
+                lives--;
+                resetCharacter();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'black';
+            ctx.fillRect(character.x, character.y, character.width, character.height);
+            platforms.forEach(platform => {
+                ctx.fillStyle = 'green';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+            enemies.forEach(enemy => {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+            // Draw score and lives
+            ctx.fillStyle = 'white';
+            ctx.fillText('Score: ' + score, 10, 20);
+            ctx.fillText('Lives: ' + lives, 10, 40);
+        }
+
+        function resetCharacter() {
+            character.x = 50;
+            character.y = canvas.height - 150;
+            character.dy = 0;
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') {
+                character.x += 5;
+            }
+            if (e.key === 'ArrowLeft') {
+                character.x -= 5;
+            }
+            if (e.key === ' ' && character.grounded) {
+                character.dy = -character.jumpStrength;
+            }
+        });
+
+        init();
+    </script>
 </body>
 </html>
