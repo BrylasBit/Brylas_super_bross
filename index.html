@@ -3,80 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brylas Super Bros Mobile</title>
+    <title>Game Title</title>
     <style>
-        body { margin: 0; overflow: hidden; }
-        canvas { background: #87CEEB; display: block; margin: 0 auto; }
+        body {
+            background-image: url('path/to/BRYLAS_logo.png');
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+        .character {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
-        // Player character
-        const player = {
-            x: 50,
-            y: canvas.height - 60,
-            width: 50,
-            height: 50,
-            color: 'blue',
-            gravity: 0.5,
-            jumpForce: -15,
-            dy: 0,
-            isJumping: false,
-        };
-
-        // Platforms
-        const platforms = [
-            { x: 0, y: canvas.height - 20, width: canvas.width, height: 20 },
-            { x: 200, y: 400, width: 200, height: 20 },
-        ];
-
-        // Game loop
-        function update() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-            drawPlatforms();
-            applyGravity();
-            requestAnimationFrame(update);
-        }
-
-        function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-        }
-
-        function drawPlatforms() {
-            ctx.fillStyle = 'green';
-            platforms.forEach(platform => {
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
-            });
-        }
-
-        function applyGravity() {
-            player.dy += player.gravity;
-            player.y += player.dy;
-            if (player.y + player.height >= canvas.height) {
-                player.y = canvas.height - player.height;
-                player.dy = 0;
-                player.isJumping = false;
-            }
-        }
-
-        function jump() {
-            if (!player.isJumping) {
-                player.dy = player.jumpForce;
-                player.isJumping = true;
-            }
-        }
-
-        window.addEventListener('touchstart', jump);
-
-        update();
-    </script>
+    <div class="character">
+        <img src="path/to/character_image.png" alt="Character" />
+    </div>
+    <h1>BRYLAS</h1>
+    <h2>Super Bross</h2>
 </body>
 </html>
