@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brylas Super Bros</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+        canvas { display: block; width: 100%; height: 100%; }
+        #ui { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; z-index: 100; }
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; align-items: flex-end; z-index: 100; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(100, 150, 255, 0.7); border: 3px solid rgba(255, 255, 255, 0.8); cursor: pointer; font-size: 30px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; transition: 0.1s; }
+        .btn:active { transform: scale(0.9); background: rgba(100, 150, 255, 1); }
+    </style>
+</head>
+<body>
+
+<div id="ui">Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
+<canvas id="gc"></canvas>
+<div id="controls">
+    <button class="btn" id="left">◀</button>
+    <button class="btn" id="jump">▲</button>
+    <button class="btn" id="right">▶</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gc');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0, lives = 3, gameX = 0;
+const keys = { L: 0, R: 0, U: 0 };
+
+// Przyciski dotykowe
+document.getElementById('left').addEventListener('touchstart', () => keys.L = 1);
+document.getElementById('left').addEventListener('touchend', () => keys.L = 0);
+document.getElementById('right').addEventListener('touchstart', () => keys.R = 1);
+document.getElementById('right').addEventListener('touchend', () => keys.R = 0);
+document.getElementById('jump').addEventListener('touchstart', () => keys.U = 1);
+document.getElementById('jump').addEventListener('touchend', () => keys.U = 0);
+
+// Klawiatura
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.L = 1;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.R = 1;
+    if (e.key === ' ' || e.key === 'ArrowUp') keys.U = 1;
+});
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'a') keys.L = 0;
+    if (e.key === 'ArrowRight' || e.key === 'd') keys.R = 0;
+    if (e.key === ' ' || e.key === 'ArrowUp') keys.U = 0;
+});
+
+// BRYLAS - postać główna
+class Brylas {
+    constructor() {
+        this.x = 50;
+        this.y = 100;
+        this.w = 60;
+        this.h = 80;
+        this.vx = 0;
+        this.vy = 0;
+        this.grounded = false;
+    }
+    update() {
+        this.vx = 0;
+        if (keys.L) this.vx = -5;
+        if (keys.R) this.vx = 5;
+        this.vy += 0.6;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.grounded = false;
+        if (this.y > canvas.height + 100) this.die();
+    }
+    draw() {
+        const sx = this.x - gameX;
+        ctx.save();
+        ctx.translate(sx + this.w/2, this.y + this.h/2);
+        
+        // Tułów - czarna koszula
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(-20, 10, 40, 30);
+        
+        // Krawat - czerwony
+        ctx.fillStyle = '#CC0000';
+        ctx.fillRect(-5, 10, 10, 20);
+        
+        // Spodnie
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(-15, 38, 30, 20);
+        
+        // Buty
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-12, 57, 10, 5);
+        ctx.fillRect(2, 57, 10, 5);
+        
+        // Głowa - biała skóra
+        ctx.fillStyle = '#F5DEB3';
+        ctx.fillRect(-18, -20, 36, 28);
+        
+        // Włosy - czarne
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(-20, -25, 40, 10);
+        
+        // Broda
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.moveTo(-10, 5);
+        ctx.lineTo(10, 5);
+        ctx.lineTo(8, 10);
+        ctx.lineTo(-8, 10);
+        ctx.fill();
+        
+        // Oczy
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-10, -8, 6, 6);
+        ctx.fillRect(4, -8, 6, 6);
+        
+        // OKULARY - czarne
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(-7, -5, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(7, -5, 5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-2, -5);
+        ctx.lineTo(2, -5);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+    die() {
+        lives--;
+        if (lives > 0) {
+            this.x = 50;
+            this.y = 100;
+            this.vx = 0;
+            this.vy = 0;
+        }
+    }
+}
+
+// PLATFORMY
+class Platform {
+    constructor(x, y, w, h) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+    }
+    draw() {
+        ctx.fillStyle = '#228B22';
+        ctx.fillRect(this.x - gameX, this.y, this.w, this.h);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x - gameX, this.y, this.w, this.h);
+    }
+    collide(obj) {
+        if (obj.x + obj.w > this.x && obj.x < this.x + this.w &&
+            obj.y + obj.h > this.y && obj.y + obj.h < this.y + obj.h * 0.1 && obj.vy >= 0) {
+            obj.y = this.y - obj.h;
+            obj.vy = 0;
+            obj.grounded = true;
+            if (keys.U) obj.vy = -12;
+        }
+    }
+}
+
+// KOTY - przeciwnicy
+class Koty {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.w = 50;
+        this.h = 40;
+        this.dir = 1;
+        this.alive = true;
+    }
+    update() {
+        this.x += this.dir * 2;
+        if (this.x < 0 || this.x > 5000) this.dir *= -1;
+    }
+    draw() {
+        if (!this.alive) return;
+        const sx = this.x - gameX;
+        ctx.save();
+        ctx.translate(sx + this.w/2, this.y + this.h/2);
+        
+        // Ciało - pomarańczowe
+        ctx.fillStyle = '#FF8C00';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 20, 15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Głowa
+        ctx.fillStyle = '#FF8C00';
+        ctx.beginPath();
+        ctx.arc(0, -8, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Uszy
+        ctx.beginPath();
+        ctx.moveTo(-8, -18);
+        ctx.lineTo(-5, -28);
+        ctx.lineTo(-2, -18);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(8, -18);
+        ctx.lineTo(5, -28);
+        ctx.lineTo(2, -18);
+        ctx.fill();
+        
+        // Oczy
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-5, -12, 3, 3);
+        ctx.fillRect(2, -12, 3, 3);
+        
+        // Nos
+        ctx.fillStyle = '#FFB6C1';
+        ctx.fillRect(-1, -6, 2, 2);
+        
+        // Ogon
+        ctx.strokeStyle = '#FF8C00';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(15, 5);
+        ctx.quadraticCurveTo(25, 15, 20, 30);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+}
+
+// MONETY
+class Coin {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.r = 12;
+        this.taken = false;
+    }
+    draw() {
+        if (this.taken) return;
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(this.x - gameX, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+}
+
+// TŁO - Logo BRYLAS
+function drawBackground() {
+    ctx.save();
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.1)';
+    ctx.font = 'bold 100px Arial';
+    ctx.textAlign = 'center';
+    ctx.globalAlpha = 0.15;
+    ctx.fillText('BRYLAS', canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+}
+
+let brylas = new Brylas();
+let platforms = [
+    new Platform(0, 450, 500, 50),
+    new Platform(550, 400, 150, 30),
+    new Platform(800, 350, 200, 30),
+    new Platform(1150, 400, 150, 30),
+    new Platform(1400, 450, 600, 50),
+];
+let koty = [
+    new Koty(400, 420),
+    new Koty(700, 320),
+    new Koty(1200, 370),
+];
+let coins = [
+    new Coin(600, 360),
+    new Coin(850, 310),
+    new Coin(1100, 360),
+];
+
+function update() {
+    brylas.update();
+    platforms.forEach(p => p.collide(brylas));
+    gameX = brylas.x - 100;
+    
+    koty.forEach(k => {
+        k.update();
+        if (brylas.x < k.x + k.w && brylas.x + brylas.w > k.x &&
+            brylas.y < k.y + k.h && brylas.y + brylas.h > k.y) {
+            if (brylas.vy > 0) {
+                k.alive = false;
+                score += 100;
+                brylas.vy = -10;
+            } else {
+                brylas.die();
+            }
+        }
+    });
+    
+    coins.forEach(c => {
+        if (!c.taken && brylas.x < c.x + c.r && brylas.x + brylas.w > c.x - c.r &&
+            brylas.y < c.y + c.r && brylas.y + brylas.h > c.y - c.r) {
+            c.taken = true;
+            score += 50;
+        }
+    });
+    
+    document.getElementById('score').innerText = score;
+    document.getElementById('lives').innerText = lives;
+    
+    if (lives <= 0) {
+        alert('GAME OVER!');
+        location.reload();
+    }
+}
+
+function draw() {
+    ctx.fillStyle = '#87CEEB';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
+    
+    platforms.forEach(p => p.draw());
+    coins.forEach(c => c.draw());
+    koty.forEach(k => k.draw());
+    brylas.draw();
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+
+</body>
+  </html>
